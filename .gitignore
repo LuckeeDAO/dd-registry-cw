@@ -8,26 +8,48 @@ Cargo.lock
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Documentation
-/doc/
-/docs/
-/doc-*/
-*.md.bak
-
-# Logs
-*.log
+# CosmWasm
+*.wasm
+*.wasm.gz
+*.wasm.sha256
 
 # Environment
 .env
 .env.local
 .env.*.local
 
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
 # Build artifacts
-/dist/
-/build/
-/artifacts/
+artifacts/
+checksums.txt
+release-info.md
+
+# Documentation
+/target/doc/
+
+# Coverage
+tarpaulin-report.html
+coverage/
+
+# Backup files
+*.bak
+*.backup

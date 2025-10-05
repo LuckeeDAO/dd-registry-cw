@@ -1,0 +1,108 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build contract
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      - name: Install wasm-opt
+        run: |
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-linux.tar.gz
+          tar -xzf binaryen-version_116-x86_64-linux.tar.gz
+          sudo cp binaryen-version_116/bin/wasm-opt /usr/local/bin/
+
+      - name: Optimize WASM
+        run: |
+          wasm-opt -Oz target/wasm32-unknown-unknown/release/dd_registry_cw.wasm -o dd_registry_cw.wasm
+          echo "Original size: $(ls -lh target/wasm32-unknown-unknown/release/dd_registry_cw.wasm | awk '{print $5}')"
+          echo "Optimized size: $(ls -lh dd_registry_cw.wasm | awk '{print $5}')"
+
+      - name: Create checksums
+        run: |
+          sha256sum dd_registry_cw.wasm > dd_registry_cw.wasm.sha256
+          sha512sum dd_registry_cw.wasm > dd_registry_cw.wasm.sha512
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## DD Registry CW Contract Release ${{ steps.version.outputs.version }}
+            
+            ### 📦 Contract Files
+            - `dd_registry_cw.wasm` - Optimized WASM contract
+            - `dd_registry_cw.wasm.sha256` - SHA256 checksum
+            - `dd_registry_cw.wasm.sha512` - SHA512 checksum
+            
+            ### 🚀 Deployment
+            This contract can be deployed to Neutron testnet using the provided scripts.
+            
+            ### 📋 Features
+            - Decentralized Decision Registry
+            - CosmWasm compatibility
+            - Standard registry functionality
+            
+            ### 🔧 Usage
+            ```bash
+            # Deploy to Neutron testnet
+            ./scripts/deploy.sh
+            ```
+          files: |
+            dd_registry_cw.wasm
+            dd_registry_cw.wasm.sha256
+            dd_registry_cw.wasm.sha512
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

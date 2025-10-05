@@ -2,22 +2,40 @@
 name = "dd-registry-cw"
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
-repository = "https://example.com/luckee/dd-registry-cw"
-description = "Luckee decentralized decision registry (CosmWasm)"
+description = "DD Registry CW - 推荐积分合约"
+authors = ["Luckee DAO Team"]
+license = "MIT"
+repository = "https://github.com/luckee-dao/dd-registry-cw"
+homepage = "https://luckee-dao.com"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std = "1.5.4"
-cw-storage-plus = "1.2.0"
-cw2 = "1.1.2"
+cosmwasm-schema = { version = "2.2.2", default-features = false }
+cosmwasm-std = "2.2.2"
+cw-storage-plus = "2"
+cw2 = "2"
+cw-utils = "2.0"
 schemars = "0.8"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = "1.0"
-hex = "0.4"
-sha2 = "0.10"
+ed25519-zebra = { version = "4.1.0", features = ["alloc"] }
 
 [dev-dependencies]
-cosmwasm-schema = "1.5.4"
+cw-multi-test = "2.0"
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+overflow-checks = true
+panic = "abort"
+incremental = false
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1
